@@ -1,0 +1,157 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <script src="http://code.highcharts.com/highcharts-more.js"></script>
+    <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
+    <script src="http://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+    <style>
+        .lg-cost {
+            color: green;
+            font-weight: bold;
+            font-size: 3em;
+        }
+        .md-cost {
+            color: green;
+            font-weight: bold;
+            font-size: 1.25em;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Energy Report - April, 2016</h1>
+    <br/>
+    <div class="row equal-height-panels">
+        <div class="col-md-6">
+            <h3 class="text-center">Current Usage</h3>
+            <div id="kwh-graph">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h3 class="text-center">
+                Budget Forecast
+            </h3>
+            <div class="row" style="margin: 30px; padding-top: 25px;">
+                <div class="col-xs-4 text-center">
+                    <div id="monthToDate" class="lg-cost">$0</div>
+                    <div>Month to date</div>
+                </div>
+                <div class="col-xs-4 text-center">
+                    <i class="fa fa-arrow-right fa-4x"></i>
+                </div>
+                <div class="col-xs-4 text-center">
+                    <div id="estimate" class="lg-cost">$0</div>
+                    <div>Estimated Bill</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12">
+            <center>
+                <h3>Your energy company charges you <span class="md-cost">$0.13</span> per kWh.</h3>
+            </center>
+        </div>
+    </div>
+    <div class="row" style="margin-top: 25px;">
+        <div class="col-xs-12">
+            <center>
+                <button id="relayButton">Toggle Relay</button>
+            </center>
+        </div>
+    </div>
+
+</div>
+<script>
+    $(function () {
+        var options = {
+            chart: {
+                type: 'gauge',
+                height: 250,
+                plotBackgroundColor: null,
+                plotBackgroundImage: null,
+                plotBorderWidth: 0,
+                plotShadow: false
+            },
+            title: {
+                text: null
+            },
+            pane: {
+                startAngle: -150,
+                endAngle: 150,
+                background: {
+                    backgroundColor: (Highcharts.theme && Highcharts.theme.background2) || '#EEE',
+                    innerRadius: '60%',
+                    outerRadius: '100%',
+                    shape: 'arc'
+                }
+            },
+            tooltip: {
+                enabled: false
+            },
+            yAxis: {
+                lineWidth: 0,
+                minorTickInterval: 'auto',
+                minorTickWidth: 1,
+                minorTickLength: 10,
+                minorTickPosition: 'inside',
+                tickPixelInterval: 100,
+                tickWidth: 2,
+                tickPosition: 'inside',
+                min: 0,
+                max: 3,
+                labels: {
+                    step: 0.5,
+                    rotation: 'auto'
+                },
+                title: {
+                    text: 'kilowatts'
+                },
+                tickLength: 5,
+                endOnTick: false
+            },
+            credits: {
+                enabled: false
+            },
+            plotOptions: {
+                solidgauge: {
+                    dataLabels: {
+                        y: 5,
+                        borderWidth: 0,
+                        useHTML: true
+                    }
+                }
+            },
+            series: [{
+                name: 'kilowatts',
+                data: [0],
+                tooltip: {
+                    valueSuffix: ' kWH'
+                }
+            }]
+        };
+        $('#kwh-graph').highcharts(options);
+
+        var socket = io();
+        socket.on('analogUpdate', function(data) {
+            var chart = $('#kwh-graph').highcharts();
+            chart.series[0].setData([Number(data.kwh)]);
+            $('#monthToDate').html('$' + (Number(data.monthToDateCost)).toFixed(2));
+            $('#estimate').html('$' + (Number(data.monthToDateCost) + Number(data.remainingMonthCost)).toFixed(2));
+        });
+
+        $('#relayButton').click(function() {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open( "GET", '/relay', false );
+            xmlHttp.send( null );
+        });
+
+    });
+</script>
+</body>
+</html>
